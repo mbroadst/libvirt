@@ -345,6 +345,11 @@ remoteDomainBuildEventCallbackAgentLifecycle(virNetClientProgramPtr prog,
                                              void *evdata, void *opaque);
 
 static void
+remoteDomainBuildEventCallbackChannelLifecycle(virNetClientProgramPtr prog,
+                                               virNetClientPtr client,
+                                               void *evdata, void *opaque);
+
+static void
 remoteDomainBuildEventCallbackMigrationIteration(virNetClientProgramPtr prog,
                                                  virNetClientPtr client,
                                                  void *evdata, void *opaque);
@@ -538,6 +543,10 @@ static virNetClientProgramEvent remoteEvents[] = {
       remoteDomainBuildEventCallbackAgentLifecycle,
       sizeof(remote_domain_event_callback_agent_lifecycle_msg),
       (xdrproc_t)xdr_remote_domain_event_callback_agent_lifecycle_msg },
+    { REMOTE_PROC_DOMAIN_EVENT_CALLBACK_CHANNEL_LIFECYCLE,
+      remoteDomainBuildEventCallbackChannelLifecycle,
+      sizeof(remote_domain_event_callback_channel_lifecycle_msg),
+      (xdrproc_t)xdr_remote_domain_event_callback_channel_lifecycle_msg },
     { REMOTE_PROC_DOMAIN_EVENT_CALLBACK_DEVICE_ADDED,
       remoteDomainBuildEventCallbackDeviceAdded,
       sizeof(remote_domain_event_callback_device_added_msg),
@@ -5144,6 +5153,29 @@ remoteDomainBuildEventCallbackAgentLifecycle(virNetClientProgramPtr prog ATTRIBU
 
     event = virDomainEventAgentLifecycleNewFromDom(dom, msg->state,
                                                    msg->reason);
+
+    virObjectUnref(dom);
+
+    remoteEventQueue(priv, event, msg->callbackID);
+}
+
+
+static void
+remoteDomainBuildEventCallbackChannelLifecycle(virNetClientProgramPtr prog ATTRIBUTE_UNUSED,
+                                               virNetClientPtr client ATTRIBUTE_UNUSED,
+                                               void *evdata, void *opaque)
+{
+    virConnectPtr conn = opaque;
+    remote_domain_event_callback_channel_lifecycle_msg *msg = evdata;
+    struct private_data *priv = conn->privateData;
+    virDomainPtr dom;
+    virObjectEventPtr event = NULL;
+
+    if (!(dom = get_nonnull_domain(conn, msg->dom)))
+        return;
+
+    event = virDomainEventChannelLifecycleNewFromDom(dom, msg->channelName, msg->state,
+                                                     msg->reason);
 
     virObjectUnref(dom);
 

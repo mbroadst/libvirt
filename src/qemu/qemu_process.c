@@ -1931,6 +1931,7 @@ qemuProcessRefreshChannelVirtioState(virQEMUDriverPtr driver,
     int agentReason = VIR_CONNECT_DOMAIN_EVENT_AGENT_LIFECYCLE_REASON_CHANNEL;
     qemuMonitorChardevInfoPtr entry;
     virObjectEventPtr event = NULL;
+    virObjectEventPtr channelEvent = NULL;
     char id[32];
 
     if (booted)
@@ -1957,6 +1958,11 @@ qemuProcessRefreshChannelVirtioState(virQEMUDriverPtr driver,
                 (event = virDomainEventAgentLifecycleNewFromObj(vm, entry->state,
                                                                 agentReason)))
                 qemuDomainEventQueue(driver, event);
+
+
+            channelEvent =
+                virDomainEventChannelLifecycleNewFromObj(vm, chr->target.name, entry->state, agentReason);
+            qemuDomainEventQueue(driver, channelEvent);
 
             chr->state = entry->state;
         }

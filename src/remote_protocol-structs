@@ -2689,6 +2689,13 @@ struct remote_domain_event_callback_agent_lifecycle_msg {
         int                        state;
         int                        reason;
 };
+struct remote_domain_event_callback_channel_lifecycle_msg {
+        int                        callbackID;
+        remote_nonnull_domain      dom;
+        remote_string              channelName;
+        int                        state;
+        int                        reason;
+};
 struct remote_connect_get_all_domain_stats_ret {
         struct {
                 u_int              retStats_len;

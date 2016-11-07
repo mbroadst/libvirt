@@ -4407,6 +4407,7 @@ processSerialChangedEvent(virQEMUDriverPtr driver,
     virQEMUDriverConfigPtr cfg = virQEMUDriverGetConfig(driver);
     virDomainChrDeviceState newstate;
     virObjectEventPtr event = NULL;
+    virObjectEventPtr channelEvent = NULL;
     virDomainDeviceDef dev;
     qemuDomainObjPrivatePtr priv = vm->privateData;
     int rc;
@@ -4481,6 +4482,10 @@ processSerialChangedEvent(virQEMUDriverPtr driver,
                                                        VIR_CONNECT_DOMAIN_EVENT_AGENT_LIFECYCLE_REASON_CHANNEL);
         qemuDomainEventQueue(driver, event);
     }
+
+    channelEvent = virDomainEventChannelLifecycleNewFromObj(vm, dev.data.chr->target.name, newstate,
+                                                            VIR_CONNECT_DOMAIN_EVENT_CHANNEL_LIFECYCLE_REASON_CHANNEL);
+    qemuDomainEventQueue(driver, channelEvent);
 
  endjob:
     qemuDomainObjEndJob(driver, vm);

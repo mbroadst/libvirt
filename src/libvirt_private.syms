@@ -535,6 +535,8 @@ virDomainEventBlockJob2NewFromDom;
 virDomainEventBlockJob2NewFromObj;
 virDomainEventBlockJobNewFromDom;
 virDomainEventBlockJobNewFromObj;
+virDomainEventChannelLifecycleNewFromDom;
+virDomainEventChannelLifecycleNewFromObj;
 virDomainEventControlErrorNewFromDom;
 virDomainEventControlErrorNewFromObj;
 virDomainEventDeviceAddedNewFromDom;

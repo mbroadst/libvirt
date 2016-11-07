@@ -12637,6 +12637,20 @@ VIR_ENUM_IMPL(virshEventAgentLifecycleReason,
               N_("domain started"),
               N_("channel event"))
 
+VIR_ENUM_DECL(virshEventChannelLifecycleState)
+VIR_ENUM_IMPL(virshEventChannelLifecycleState,
+              VIR_CONNECT_DOMAIN_EVENT_CHANNEL_LIFECYCLE_STATE_LAST,
+              N_("unknown"),
+              N_("connected"),
+              N_("disconnected"))
+
+VIR_ENUM_DECL(virshEventChannelLifecycleReason)
+VIR_ENUM_IMPL(virshEventChannelLifecycleReason,
+              VIR_CONNECT_DOMAIN_EVENT_CHANNEL_LIFECYCLE_REASON_LAST,
+              N_("unknown"),
+              N_("domain started"),
+              N_("channel event"))
+
 #define UNKNOWNSTR(str) (str ? str : N_("unsupported value"))
 static void
 virshEventAgentLifecyclePrint(virConnectPtr conn ATTRIBUTE_UNUSED,
@@ -12652,6 +12666,25 @@ virshEventAgentLifecyclePrint(virConnectPtr conn ATTRIBUTE_UNUSED,
                       virDomainGetName(dom),
                       UNKNOWNSTR(virshEventAgentLifecycleStateTypeToString(state)),
                       UNKNOWNSTR(virshEventAgentLifecycleReasonTypeToString(reason)));
+    virshEventPrint(opaque, &buf);
+}
+
+static void
+virshEventChannelLifecyclePrint(virConnectPtr conn ATTRIBUTE_UNUSED,
+                                virDomainPtr dom,
+                                const char *channelName,
+                                int state,
+                                int reason,
+                                void *opaque)
+{
+    virBuffer buf = VIR_BUFFER_INITIALIZER;
+
+    virBufferAsprintf(&buf, _("event 'channel-lifecycle' for domain %s: name: '%s', "
+                              "state: '%s' reason: '%s'\n"),
+                      virDomainGetName(dom),
+                      channelName,
+                      UNKNOWNSTR(virshEventChannelLifecycleStateTypeToString(state)),
+                      UNKNOWNSTR(virshEventChannelLifecycleReasonTypeToString(reason)));
     virshEventPrint(opaque, &buf);
 }
 
@@ -12755,6 +12788,8 @@ static vshEventCallback vshEventCallbacks[] = {
       VIR_DOMAIN_EVENT_CALLBACK(virshEventJobCompletedPrint), },
     { "device-removal-failed",
       VIR_DOMAIN_EVENT_CALLBACK(virshEventDeviceRemovalFailedPrint), },
+    { "channel-lifecycle",
+      VIR_DOMAIN_EVENT_CALLBACK(virshEventChannelLifecyclePrint), },
 };
 verify(VIR_DOMAIN_EVENT_ID_LAST == ARRAY_CARDINALITY(vshEventCallbacks));
 

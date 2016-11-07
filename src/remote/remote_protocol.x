@@ -3242,6 +3242,15 @@ struct remote_domain_event_callback_agent_lifecycle_msg {
     int reason;
 };
 
+struct remote_domain_event_callback_channel_lifecycle_msg {
+    int callbackID;
+    remote_nonnull_domain dom;
+
+    char *channelName;
+    int state;
+    int reason;
+};
+
 struct remote_connect_get_all_domain_stats_ret {
     remote_domain_stats_record retStats<REMOTE_DOMAIN_LIST_MAX>;
 };
@@ -5934,5 +5943,11 @@ enum remote_procedure {
      * @generate: both
      * @acl: none
      */
-    REMOTE_PROC_NODE_DEVICE_EVENT_UPDATE = 377
+    REMOTE_PROC_NODE_DEVICE_EVENT_UPDATE = 377,
+
+    /**
+     * @generate: both
+     * @acl: none
+     */
+    REMOTE_PROC_DOMAIN_EVENT_CALLBACK_CHANNEL_LIFECYCLE = 378
 };

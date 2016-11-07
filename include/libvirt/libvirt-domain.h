@@ -3965,6 +3965,46 @@ typedef void (*virConnectDomainEventAgentLifecycleCallback)(virConnectPtr conn,
                                                             int reason,
                                                             void *opaque);
 
+typedef enum {
+    VIR_CONNECT_DOMAIN_EVENT_CHANNEL_LIFECYCLE_STATE_CONNECTED = 1, /* channel connected */
+    VIR_CONNECT_DOMAIN_EVENT_CHANNEL_LIFECYCLE_STATE_DISCONNECTED = 2, /* channel disconnected */
+
+# ifdef VIR_ENUM_SENTINELS
+    VIR_CONNECT_DOMAIN_EVENT_CHANNEL_LIFECYCLE_STATE_LAST
+# endif
+} virConnectDomainEventChannelLifecycleState;
+
+typedef enum {
+    VIR_CONNECT_DOMAIN_EVENT_CHANNEL_LIFECYCLE_REASON_UNKNOWN = 0, /* unknown state change reason */
+    VIR_CONNECT_DOMAIN_EVENT_CHANNEL_LIFECYCLE_REASON_DOMAIN_STARTED = 1, /* state changed due to domain start */
+    VIR_CONNECT_DOMAIN_EVENT_CHANNEL_LIFECYCLE_REASON_CHANNEL = 2, /* channel state changed */
+
+# ifdef VIR_ENUM_SENTINELS
+    VIR_CONNECT_DOMAIN_EVENT_CHANNEL_LIFECYCLE_REASON_LAST
+# endif
+} virConnectDomainEventChannelLifecycleReason;
+
+/**
+ * virConnectDomainEventChannelLifecycleCallback:
+ * @conn: connection object
+ * @dom: domain on which the event occurred
+ * @channelName: the name of the channel on which the event occurred
+ * @state: new state of the guest channel, one of virConnectDomainEventChannelLifecycleState
+ * @reason: reason for state change; one of virConnectDomainEventChannelLifecycleReason
+ * @opaque: application specified data
+ *
+ * This callback occurs when libvirt detects a change in the state of a guest
+ * serial channel.
+ *
+ * The callback signature to use when registering for an event of type
+ * VIR_DOMAIN_EVENT_ID_CHANNEL_LIFECYCLE with virConnectDomainEventRegisterAny()
+ */
+typedef void (*virConnectDomainEventChannelLifecycleCallback)(virConnectPtr conn,
+                                                              virDomainPtr dom,
+                                                              const char *channelName,
+                                                              int state,
+                                                              int reason,
+                                                              void *opaque);
 
 /**
  * VIR_DOMAIN_EVENT_CALLBACK:
@@ -4006,6 +4046,7 @@ typedef enum {
     VIR_DOMAIN_EVENT_ID_MIGRATION_ITERATION = 20, /* virConnectDomainEventMigrationIterationCallback */
     VIR_DOMAIN_EVENT_ID_JOB_COMPLETED = 21,  /* virConnectDomainEventJobCompletedCallback */
     VIR_DOMAIN_EVENT_ID_DEVICE_REMOVAL_FAILED = 22, /* virConnectDomainEventDeviceRemovalFailedCallback */
+    VIR_DOMAIN_EVENT_ID_CHANNEL_LIFECYCLE = 23, /* virConnectDomainEventChannelLifecycleCallback */
 
 # ifdef VIR_ENUM_SENTINELS
     VIR_DOMAIN_EVENT_ID_LAST

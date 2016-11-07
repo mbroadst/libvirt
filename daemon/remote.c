@@ -1086,6 +1086,47 @@ remoteRelayDomainEventAgentLifecycle(virConnectPtr conn,
 
 
 static int
+remoteRelayDomainEventChannelLifecycle(virConnectPtr conn,
+                                       virDomainPtr dom,
+                                       const char *channelName,
+                                       int state,
+                                       int reason,
+                                       void *opaque)
+{
+    daemonClientEventCallbackPtr callback = opaque;
+    remote_domain_event_callback_channel_lifecycle_msg data;
+
+    if (callback->callbackID < 0 ||
+        !remoteRelayDomainEventCheckACL(callback->client, conn, dom))
+        return -1;
+
+    VIR_DEBUG("Relaying domain channel lifecycle event %s %d, callback %d, "
+              " name: %s, state %d, reason %d",
+              dom->name, dom->id, callback->callbackID, channelName, state, reason);
+
+    /* build return data */
+    memset(&data, 0, sizeof(data));
+    data.callbackID = callback->callbackID;
+    make_nonnull_domain(&data.dom, dom);
+
+    if (VIR_STRDUP(data.channelName, channelName) < 0)
+        goto error;
+    data.state = state;
+    data.reason = reason;
+
+    remoteDispatchObjectEventSend(callback->client, remoteProgram,
+                                  REMOTE_PROC_DOMAIN_EVENT_CALLBACK_CHANNEL_LIFECYCLE,
+                                  (xdrproc_t)xdr_remote_domain_event_callback_channel_lifecycle_msg,
+                                  &data);
+
+    return 0;
+ error:
+    VIR_FREE(data.channelName);
+    return -1;
+}
+
+
+static int
 remoteRelayDomainEventDeviceAdded(virConnectPtr conn,
                                   virDomainPtr dom,
                                   const char *devAlias,
@@ -1248,6 +1289,7 @@ static virConnectDomainEventGenericCallback domainEventCallbacks[] = {
     VIR_DOMAIN_EVENT_CALLBACK(remoteRelayDomainEventMigrationIteration),
     VIR_DOMAIN_EVENT_CALLBACK(remoteRelayDomainEventJobCompleted),
     VIR_DOMAIN_EVENT_CALLBACK(remoteRelayDomainEventDeviceRemovalFailed),
+    VIR_DOMAIN_EVENT_CALLBACK(remoteRelayDomainEventChannelLifecycle)
 };
 
 verify(ARRAY_CARDINALITY(domainEventCallbacks) == VIR_DOMAIN_EVENT_ID_LAST);

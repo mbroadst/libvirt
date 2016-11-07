@@ -337,6 +337,46 @@ guestAgentLifecycleEventReasonToString(int event)
     return "unknown";
 }
 
+
+static const char *
+guestChannelLifecycleEventStateToString(int event)
+{
+    switch ((virConnectDomainEventChannelLifecycleState) event) {
+    case VIR_CONNECT_DOMAIN_EVENT_CHANNEL_LIFECYCLE_STATE_DISCONNECTED:
+        return "Disconnected";
+
+    case VIR_CONNECT_DOMAIN_EVENT_CHANNEL_LIFECYCLE_STATE_CONNECTED:
+        return "Connected";
+
+    case VIR_CONNECT_DOMAIN_EVENT_CHANNEL_LIFECYCLE_STATE_LAST:
+        break;
+    }
+
+    return "unknown";
+}
+
+
+static const char *
+guestChannelLifecycleEventReasonToString(int event)
+{
+    switch ((virConnectDomainEventChannelLifecycleReason) event) {
+    case VIR_CONNECT_DOMAIN_EVENT_CHANNEL_LIFECYCLE_REASON_UNKNOWN:
+        return "Unknown";
+
+    case VIR_CONNECT_DOMAIN_EVENT_CHANNEL_LIFECYCLE_REASON_DOMAIN_STARTED:
+        return "Domain started";
+
+    case VIR_CONNECT_DOMAIN_EVENT_CHANNEL_LIFECYCLE_REASON_CHANNEL:
+        return "Channel event";
+
+    case VIR_CONNECT_DOMAIN_EVENT_CHANNEL_LIFECYCLE_REASON_LAST:
+        break;
+    }
+
+    return "unknown";
+}
+
+
 static const char *
 storagePoolEventToString(int event)
 {
@@ -797,6 +837,22 @@ myDomainEventAgentLifecycleCallback(virConnectPtr conn ATTRIBUTE_UNUSED,
     return 0;
 }
 
+static int
+myDomainEventChannelLifecycleCallback(virConnectPtr conn ATTRIBUTE_UNUSED,
+                                      virDomainPtr dom,
+                                      const char *channelName,
+                                      int state,
+                                      int reason,
+                                      void *opaque ATTRIBUTE_UNUSED)
+{
+    printf("%s EVENT: Domain %s(%d) guest channel(%s) state changed: %s reason: %s\n",
+           __func__, virDomainGetName(dom), virDomainGetID(dom), channelName,
+           guestChannelLifecycleEventStateToString(state),
+           guestChannelLifecycleEventReasonToString(reason));
+
+    return 0;
+}
+
 
 static int
 myDomainEventDeviceAddedCallback(virConnectPtr conn ATTRIBUTE_UNUSED,
@@ -971,6 +1027,7 @@ struct domainEventData domainEvents[] = {
     DOMAIN_EVENT(VIR_DOMAIN_EVENT_ID_MIGRATION_ITERATION, myDomainEventMigrationIterationCallback),
     DOMAIN_EVENT(VIR_DOMAIN_EVENT_ID_JOB_COMPLETED, myDomainEventJobCompletedCallback),
     DOMAIN_EVENT(VIR_DOMAIN_EVENT_ID_DEVICE_REMOVAL_FAILED, myDomainEventDeviceRemovalFailedCallback),
+    DOMAIN_EVENT(VIR_DOMAIN_EVENT_ID_CHANNEL_LIFECYCLE, myDomainEventChannelLifecycleCallback)
 };
 
 struct storagePoolEventData {

@@ -217,6 +217,18 @@ virDomainEventAgentLifecycleNewFromDom(virDomainPtr dom,
                                        int reason);
 
 virObjectEventPtr
+virDomainEventChannelLifecycleNewFromObj(virDomainObjPtr obj,
+                                         const char *channelName,
+                                         int state,
+                                         int reason);
+
+virObjectEventPtr
+virDomainEventChannelLifecycleNewFromDom(virDomainPtr dom,
+                                         const char *channelName,
+                                         int state,
+                                         int reason);
+
+virObjectEventPtr
 virDomainEventMigrationIterationNewFromObj(virDomainObjPtr obj,
                                            int iteration);
 

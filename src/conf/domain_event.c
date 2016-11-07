@@ -55,6 +55,7 @@ static virClassPtr virDomainEventPMClass;
 static virClassPtr virDomainQemuMonitorEventClass;
 static virClassPtr virDomainEventTunableClass;
 static virClassPtr virDomainEventAgentLifecycleClass;
+static virClassPtr virDomainEventChannelLifecycleClass;
 static virClassPtr virDomainEventDeviceAddedClass;
 static virClassPtr virDomainEventMigrationIterationClass;
 static virClassPtr virDomainEventJobCompletedClass;
@@ -75,6 +76,7 @@ static void virDomainEventPMDispose(void *obj);
 static void virDomainQemuMonitorEventDispose(void *obj);
 static void virDomainEventTunableDispose(void *obj);
 static void virDomainEventAgentLifecycleDispose(void *obj);
+static void virDomainEventChannelLifecycleDispose(void *obj);
 static void virDomainEventDeviceAddedDispose(void *obj);
 static void virDomainEventMigrationIterationDispose(void *obj);
 static void virDomainEventJobCompletedDispose(void *obj);
@@ -241,6 +243,16 @@ struct _virDomainEventAgentLifecycle {
 typedef struct _virDomainEventAgentLifecycle virDomainEventAgentLifecycle;
 typedef virDomainEventAgentLifecycle *virDomainEventAgentLifecyclePtr;
 
+struct _virDomainEventChannelLifecycle {
+    virDomainEvent parent;
+
+    char *channelName;
+    int state;
+    int reason;
+};
+typedef struct _virDomainEventChannelLifecycle virDomainEventChannelLifecycle;
+typedef virDomainEventChannelLifecycle *virDomainEventChannelLifecyclePtr;
+
 struct _virDomainEventMigrationIteration {
     virDomainEvent parent;
 
@@ -366,6 +378,12 @@ virDomainEventsOnceInit(void)
                       "virDomainEventAgentLifecycle",
                       sizeof(virDomainEventAgentLifecycle),
                       virDomainEventAgentLifecycleDispose)))
+        return -1;
+    if (!(virDomainEventChannelLifecycleClass =
+          virClassNew(virDomainEventClass,
+                      "virDomainEventChannelLifecycle",
+                      sizeof(virDomainEventChannelLifecycle),
+                      virDomainEventChannelLifecycleDispose)))
         return -1;
     if (!(virDomainEventMigrationIterationClass =
           virClassNew(virDomainEventClass,
@@ -554,6 +572,15 @@ virDomainEventAgentLifecycleDispose(void *obj)
 {
     virDomainEventAgentLifecyclePtr event = obj;
     VIR_DEBUG("obj=%p", event);
+};
+
+static void
+virDomainEventChannelLifecycleDispose(void *obj)
+{
+    virDomainEventChannelLifecyclePtr event = obj;
+    VIR_DEBUG("obj=%p", event);
+
+    VIR_FREE(event->channelName);
 };
 
 static void
@@ -1460,6 +1487,56 @@ virDomainEventAgentLifecycleNewFromDom(virDomainPtr dom,
 }
 
 static virObjectEventPtr
+virDomainEventChannelLifecycleNew(int id,
+                                  const char *name,
+                                  const unsigned char *uuid,
+                                  const char *channelName,
+                                  int state,
+                                  int reason)
+{
+    virDomainEventChannelLifecyclePtr ev;
+
+    if (virDomainEventsInitialize() < 0)
+        return NULL;
+
+    if (!(ev = virDomainEventNew(virDomainEventChannelLifecycleClass,
+                                 VIR_DOMAIN_EVENT_ID_CHANNEL_LIFECYCLE,
+                                 id, name, uuid)))
+        return NULL;
+
+    if (VIR_STRDUP(ev->channelName, channelName) < 0) {
+        virObjectUnref(ev);
+        return NULL;
+    }
+
+    ev->state = state;
+    ev->reason = reason;
+
+    return (virObjectEventPtr)ev;
+}
+
+virObjectEventPtr
+virDomainEventChannelLifecycleNewFromObj(virDomainObjPtr obj,
+                                         const char *channelName,
+                                         int state,
+                                         int reason)
+{
+    return virDomainEventChannelLifecycleNew(obj->def->id, obj->def->name,
+                                             obj->def->uuid, channelName, state, reason);
+}
+
+virObjectEventPtr
+virDomainEventChannelLifecycleNewFromDom(virDomainPtr dom,
+                                         const char *channelName,
+                                         int state,
+                                         int reason)
+{
+    return virDomainEventChannelLifecycleNew(dom->id, dom->name, dom->uuid,
+                                             channelName, state, reason);
+}
+
+
+static virObjectEventPtr
 virDomainEventMigrationIterationNew(int id,
                                     const char *name,
                                     const unsigned char *uuid,
@@ -1809,6 +1886,18 @@ virDomainEventDispatchDefaultFunc(virConnectPtr conn,
                                                               agentLifecycleEvent->state,
                                                               agentLifecycleEvent->reason,
                                                               cbopaque);
+            goto cleanup;
+        }
+
+    case VIR_DOMAIN_EVENT_ID_CHANNEL_LIFECYCLE:
+        {
+            virDomainEventChannelLifecyclePtr channelLifecycleEvent;
+            channelLifecycleEvent = (virDomainEventChannelLifecyclePtr)event;
+            ((virConnectDomainEventChannelLifecycleCallback)cb)(conn, dom,
+                                                                channelLifecycleEvent->channelName,
+                                                                channelLifecycleEvent->state,
+                                                                channelLifecycleEvent->reason,
+                                                                cbopaque);
             goto cleanup;
         }
 
